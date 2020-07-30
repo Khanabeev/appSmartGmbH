@@ -7,7 +7,8 @@
         <title>Module Product</title>
 
        {{-- Laravel Mix - CSS File --}}
-       {{-- <link rel="stylesheet" href="{{ mix('css/product.css') }}"> --}}
+        <link rel="stylesheet" href="{{ asset('css/normalize.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/skeleton.css') }}">
 
     </head>
     <body>

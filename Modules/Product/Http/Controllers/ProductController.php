@@ -2,6 +2,7 @@
 
 namespace Modules\Product\Http\Controllers;
 
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
@@ -9,12 +10,58 @@ use Illuminate\Routing\Controller;
 class ProductController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     * @return Response
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View|void
      */
     public function index()
     {
-        return view('product::index');
+        $client = new Client();
+        $url = 'https://world.openfoodfacts.org/cgi/search.pl';
+        $params = [
+            'action' => 'process',
+            'sort_by' => 'unique_scans_n',
+            'page_size' => 20,
+            'json' => 3
+        ];
+        $link = $url . '?' . http_build_query($params);
+
+        $response = $client->get($link);
+
+        $products = [];
+
+        $properties = [
+            'id',
+            'product_name',
+            'image_url',
+            'categories'
+        ];
+
+        $isCorrect = true;
+
+        if ($response->getStatusCode() != 200) {
+            return abort(500);
+        }
+
+        $result = json_decode($response->getBody()->getContents());
+
+        foreach ($result->products as $product) {
+
+            foreach ($properties as $property) {
+                if (!property_exists($product, $property)) {
+                    $isCorrect = false;
+                    break;
+                }
+            }
+
+            if ($isCorrect) {
+                $products[] = [
+                    'id' => $product->id,
+                    'name' => $product->product_name,
+                    'image' => $product->image_front_url,
+                    'categories' => $product->categories
+                ];
+            }
+        };
+        return view('product::index', ['products' => $products]);
     }
 
     /**
@@ -32,47 +79,6 @@ class ProductController extends Controller
      * @return Response
      */
     public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Show the specified resource.
-     * @param int $id
-     * @return Response
-     */
-    public function show($id)
-    {
-        return view('product::show');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     * @param int $id
-     * @return Response
-     */
-    public function edit($id)
-    {
-        return view('product::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     * @param Request $request
-     * @param int $id
-     * @return Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     * @param int $id
-     * @return Response
-     */
-    public function destroy($id)
     {
         //
     }
