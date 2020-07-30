@@ -6,80 +6,117 @@ use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Modules\Product\Entities\Product;
+use PhpParser\Node\Expr\Cast\Object_;
 
 class ProductController extends Controller
 {
+
     /**
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View|void
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function index()
     {
-        $client = new Client();
         $url = 'https://world.openfoodfacts.org/cgi/search.pl';
         $params = [
             'action' => 'process',
             'sort_by' => 'unique_scans_n',
-            'page_size' => 20,
-            'json' => 3
+            'page_size' => 40,
+            'json' => 1
         ];
+        $ttl = 3200 * 24 * 7;
+        $key = sha1($url . implode(',', $params));
+        $products = Cache::remember($key, $ttl, function () use ($url, $params) {
+            return $this->getProducts($url, $params);
+        });
+
+        $propertiesList = [
+            'id' => 'id',
+            'name' => 'product_name',
+            'image' => 'image_thumb_url',
+            'categories' => 'categories'
+        ];
+
+        $items = [];
+
+        foreach ($products as $product) {
+            $items[] = $this->getProperties($product, $propertiesList);
+        };
+
+        return view('product::index', ['items' => $items]);
+    }
+
+    /**
+     * @param object $product
+     * @param array $properties
+     * @return array
+     */
+    private function getProperties(object $product, array $properties): array
+    {
+        $arr = [];
+        foreach ($properties as $key => $value) {
+            if (property_exists($product, $value)) {
+                $arr[$key] = $product->$value;
+            } else {
+                $arr[$key] = '';
+            }
+        }
+        return $arr;
+    }
+
+    /**
+     * @param string $url
+     * @param array $params
+     * @return array
+     */
+    private function getProducts(string $url, array $params): array
+    {
+        $client = new Client();
+
         $link = $url . '?' . http_build_query($params);
 
         $response = $client->get($link);
 
-        $products = [];
-
-        $properties = [
-            'id',
-            'product_name',
-            'image_url',
-            'categories'
-        ];
-
-        $isCorrect = true;
-
         if ($response->getStatusCode() != 200) {
-            return abort(500);
+            Log::error('ERROR: Get products status - ' . $response->getStatusCode());
+            return [];
         }
 
         $result = json_decode($response->getBody()->getContents());
-
-        foreach ($result->products as $product) {
-
-            foreach ($properties as $property) {
-                if (!property_exists($product, $property)) {
-                    $isCorrect = false;
-                    break;
-                }
-            }
-
-            if ($isCorrect) {
-                $products[] = [
-                    'id' => $product->id,
-                    'name' => $product->product_name,
-                    'image' => $product->image_front_url,
-                    'categories' => $product->categories
-                ];
-            }
-        };
-        return view('product::index', ['products' => $products]);
+        return $result->products;
     }
 
-    /**
-     * Show the form for creating a new resource.
-     * @return Response
-     */
-    public function create()
-    {
-        return view('product::create');
-    }
 
     /**
-     * Store a newly created resource in storage.
      * @param Request $request
-     * @return Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'id' => ['required'],
+            'name' => ['required'],
+            'categories' => ['required'],
+            'image' => ['url']
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false]);
+        }
+
+        try {
+            Product::updateOrCreate(
+                ['product_id' => $request->get('id')],
+                ['name' => $request->get('name'), 'categories' => $request->get('categories'), 'image' => $request->get('image')]
+            );
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return response()->json(['success' => false]);
+        }
+
+        return response()->json(['success' => true]);
     }
 }

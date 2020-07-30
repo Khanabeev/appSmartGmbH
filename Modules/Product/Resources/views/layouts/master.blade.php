@@ -6,15 +6,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Module Product</title>
 
-       {{-- Laravel Mix - CSS File --}}
         <link rel="stylesheet" href="{{ asset('css/normalize.css') }}">
         <link rel="stylesheet" href="{{ asset('css/skeleton.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/simplePagination.css') }}">
+        <script src="{{ asset('js/jquery-3.5.1.min.js') }}"></script>
+        <script src="{{ asset('js/jquery.simplePagination.js') }}"></script>
 
     </head>
     <body>
         @yield('content')
-
-        {{-- Laravel Mix - JS File --}}
-        {{-- <script src="{{ mix('js/product.js') }}"></script> --}}
     </body>
 </html>
