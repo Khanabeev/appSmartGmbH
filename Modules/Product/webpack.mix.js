@@ -6,8 +6,14 @@ require('laravel-mix-merge-manifest');
 
 mix.setPublicPath('../../public').mergeManifest();
 
-mix.js(__dirname + '/Resources/assets/js/app.js', 'js/product.js')
-    .sass( __dirname + '/Resources/assets/sass/app.scss', 'css/product.css');
+mix.scripts([
+    __dirname + '/Resources/assets/js/jquery.simplePagination.js',
+],'Assets/js/product.js')
+mix.styles([
+    __dirname + '/Resources/assets/css/normalize.css',
+    __dirname + '/Resources/assets/css/simplePagination.css',
+    __dirname + '/Resources/assets/css/skeleton.css',
+],'Assets/css/product.css')
 
 if (mix.inProduction()) {
     mix.version();
