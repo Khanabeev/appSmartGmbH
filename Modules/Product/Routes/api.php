@@ -13,4 +13,4 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::post('/product/add', 'ProductController@store');
+Route::post('/product/store', 'ProductController@store')->name('api.product.store');

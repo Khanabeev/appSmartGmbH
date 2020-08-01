@@ -46,6 +46,10 @@ class ProductController extends Controller
             $items[] = $this->getProperties($product, $propertiesList);
         };
 
+        if (empty($items)) {
+            Log::error('ERROR: get empty products array');
+        }
+
         return view('product::index', ['items' => $items]);
     }
 
@@ -104,7 +108,7 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false]);
+            return response()->json(['success' => false],\Symfony\Component\HttpFoundation\Response::HTTP_BAD_REQUEST);
         }
 
         try {
@@ -114,7 +118,7 @@ class ProductController extends Controller
             );
         } catch (\Exception $e) {
             Log::error($e->getMessage());
-            return response()->json(['success' => false]);
+            return response()->json(['success' => false], \Symfony\Component\HttpFoundation\Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
         return response()->json(['success' => true]);

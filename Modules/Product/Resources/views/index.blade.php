@@ -55,7 +55,7 @@
                 let id = $(this).attr("id")
                 let product = products.filter(x => x.id === id)[0]
 
-                $.post( "/api/product/add", product)
+                $.post( "{{ route('api.product.store') }}", product)
                     .done(function( data ) {
                         if(data.success) {
                             alert('Successfully saved to the base')
